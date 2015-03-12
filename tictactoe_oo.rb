@@ -157,7 +157,7 @@ class Game
     mark_square
     @board.draw
     if winner?(@current_player.marker)
-      self.winner = @current_player
+      @winner = @current_player
       say_winner
     end
   end
