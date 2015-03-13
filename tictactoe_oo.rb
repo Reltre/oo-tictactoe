@@ -66,7 +66,8 @@ class Square
 end
 
 class Player
-  attr_reader :name, :marker
+  attr_accessor :name
+  attr_reader :marker
 
   def initialize(name, marker)
     @name = name
@@ -82,6 +83,12 @@ class Game
     puts "Please enter your name:"
     @human_player = Player.new(gets.chomp, 'X')
     @computer_player = Player.new('C3PO','O')
+    @current_player = initial_current_player
+  end
+
+  def reset
+    @board = Board.new
+    @winner = nil
     @current_player = initial_current_player
   end
 
@@ -162,6 +169,12 @@ class Game
     end
   end
 
+  def play_again?
+    puts "Would you like to play again?"   
+    answer = gets.chomp.downcase
+    ['yes','yea','y'].include?(answer) 
+  end
+
   def play
     @board.draw
     loop do
@@ -172,12 +185,15 @@ class Game
         break
       end
       change_current_player
-      current_player_takes_turn
-      break if winner == @current_player
-      change_current_player
     end
-    puts "Thanks for playing!"  
   end
 end
 
-Game.new.play
+game = Game.new 
+loop do
+  game.play
+  sleep(3)
+  continue_game = game.play_again?
+  game.reset if continue_game
+  puts "Thanks for playing!"; break if !continue_game
+end 
