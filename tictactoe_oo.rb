@@ -1,17 +1,19 @@
+require 'pry'
+
 class Board
-  attr_reader :data  
+  attr_reader :data
   POSSIBLE_WINS = {
     1 => [[2,3],[4,7],[5,9]],
     2 => [[1,3],[5,8]],
     3 => [[1,2],[6,9],[5,7]],
     4 => [[1,7],[5,6]],
-    5 => [[1,9],[2,8],[3,7],[4,6]], 
+    5 => [[1,9],[2,8],[3,7],[4,6]],
     6 => [[4,5],[3,9]],
     7 => [[1,4],[8,9],[3,5]],
-    8 => [[2,5],[7,9]],  
+    8 => [[2,5],[7,9]],
     9 => [[7,8],[3,6],[1,5]]
   }
-         
+
   def initialize
     @data = {}
     (1..9).each { |position| @data[position] = Square.new(' ') }
@@ -26,6 +28,15 @@ class Board
     puts "  #{@data[7]} | #{@data[8]} | #{@data[9]} "
   end
 
+  def show_options
+    puts "Please choose a spot to mark:#{joinor(empty_positions, ', ', 'and')}"
+  end
+
+  def joinor(positions, delimeter = ', ', conjunction = 'or')
+    positions[-1] = "#{conjunction} #{positions[-1]}" unless positions.empty?
+    positions.join(delimeter)
+  end
+
   def empty_positions
     @data.select { |_,square| square.empty? }.keys
   end
@@ -34,7 +45,7 @@ class Board
     @data.select { |_,square| !square.empty? }.keys
   end
 
-  def is_empty?
+  def tie?
     empty_positions.size == 0
   end
 
@@ -46,7 +57,7 @@ end
 class Square
   def initialize(value)
     @value = value
-  end 
+  end
 
   def empty?
     @value == ' '
@@ -76,7 +87,7 @@ class Player
 end
 
 class Game
-  attr_accessor :winner
+  attr_accessor :winner, :tie
 
   def initialize
     @board = Board.new
@@ -93,7 +104,7 @@ class Game
   end
 
   def initial_current_player
-    @current_player = 
+    @current_player =
       rand(2) == 0 ? @human_player : @computer_player
   end
 
@@ -108,23 +119,20 @@ class Game
   def mark_square
     if @current_player == @human_player
       begin
-        puts "Please choose a spot to mark:#{@board.empty_positions*','}"
         position = gets.chomp.to_i
       end until @board.empty_positions.include?(position)
-    else 
+    else
       position = computer_picks_square
     end
     @board.mark_square(position, @current_player.marker)
   end
-  
+
   def computer_picks_square
-    if computer_choice = move_if_two_in_a_row(@computer_player.marker)
-      nil
-    elsif computer_choice = move_if_two_in_a_row(@human_player.marker)
-      nil
-    else
-      computer_choice = @board.empty_positions.sample 
-    end
+    attack = move_if_two_in_a_row(@computer_player.marker)
+    defense = move_if_two_in_a_row(@human_player.marker)
+    computer_choice = attack if attack
+    computer_choice = defense if !computer_choice && defense
+    computer_choice = @board.empty_positions.sample unless computer_choice
     computer_choice
   end
 
@@ -150,7 +158,7 @@ class Game
         @board.data[value[1]].marker == marker
       end
     end
-  end  
+  end
 
   def say_winner
     puts "#{@current_player.name} has gotten 3 in a row and wins the game."
@@ -162,38 +170,43 @@ class Game
 
   def current_player_takes_turn
     mark_square
-    @board.draw
-    if winner?(@current_player.marker)
-      @winner = @current_player
-      say_winner
-    end
+    @winner = @current_player if winner?(@current_player.marker)
+    @tie = @board.tie?
   end
 
   def play_again?
-    puts "Would you like to play again?"   
+    puts "Would you like to play again?"
     answer = gets.chomp.downcase
-    ['yes','yea','y'].include?(answer) 
+    ['yes','yea','y'].include?(answer)
   end
 
   def play
-    @board.draw
     loop do
-      current_player_takes_turn
-      break if winner == @current_player
-      if @board.empty_positions.size == 0 
+      @board.draw
+      @board.show_options unless winner || tie
+      if @winner == @current_player
+        say_winner
+        break
+      end
+
+      if tie
         say_tie
         break
       end
       change_current_player
+      current_player_takes_turn
     end
   end
 end
 
-game = Game.new 
+game = Game.new
 loop do
   game.play
-  sleep(3)
-  continue_game = game.play_again?
-  game.reset if continue_game
-  puts "Thanks for playing!"; break if !continue_game
-end 
+  sleep(2)
+  if game.play_again?
+    game.reset
+    next
+  end
+  puts "Thanks for playing!"
+  break
+end
