@@ -92,10 +92,25 @@ class Game
 
   def initialize
     @board = Board.new
-    puts "Please enter your name:"
-    @human_player = Player.new(gets.chomp, 'X')
-    @computer_player = Player.new('C3PO','O')
+    name = ask_name
+    marker = choose_marker
+    @human_player = Player.new(name, marker)
+    @computer_player = Player.new('C3PO',get_computer_marker)
     @current_player = initial_current_player
+  end
+
+  def ask_name
+    puts "Please enter your name:"
+    gets.chomp
+  end
+
+  def choose_marker
+    puts "Please choose a marker(X or O)"
+    gets.chomp
+  end
+
+  def get_computer_marker
+    (['X','O'] - [@human_player.marker]).first
   end
 
   def reset
@@ -189,6 +204,13 @@ class Game
     puts "Player: #{@human_player.score} |  Computer: #{@computer_player.score}"
   end
 
+  def game_over
+    if @current_player.score == 5
+      puts "You've reached 5 points!"
+      exit
+    end
+  end
+
   def play
     loop do
       @board.draw
@@ -199,6 +221,7 @@ class Game
         say_score
         break
       end
+      game_over
       change_current_player
       current_player_takes_turn
     end
