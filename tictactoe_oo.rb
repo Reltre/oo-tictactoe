@@ -77,12 +77,13 @@ class Square
 end
 
 class Player
-  attr_accessor :name
+  attr_accessor :name, :score
   attr_reader :marker
 
   def initialize(name, marker)
     @name = name
     @marker = marker
+    @score = 0
   end
 end
 
@@ -99,7 +100,8 @@ class Game
 
   def reset
     @board = Board.new
-    @winner = nil
+    self.winner = nil
+    self.tie = nil
     @current_player = initial_current_player
   end
 
@@ -170,7 +172,10 @@ class Game
 
   def current_player_takes_turn
     mark_square
-    @winner = @current_player if winner?(@current_player.marker)
+    if winner?(@current_player.marker)
+      @winner = @current_player
+      @current_player.score += 1
+    end
     @tie = @board.tie?
   end
 
@@ -180,17 +185,18 @@ class Game
     ['yes','yea','y'].include?(answer)
   end
 
+  def say_score
+    puts "Player: #{@human_player.score} |  Computer: #{@computer_player.score}"
+  end
+
   def play
     loop do
       @board.draw
       @board.show_options unless winner || tie
-      if @winner == @current_player
-        say_winner
-        break
-      end
-
-      if tie
-        say_tie
+      say_winner if winner
+      say_tie if tie
+      if tie || winner
+        say_score
         break
       end
       change_current_player
